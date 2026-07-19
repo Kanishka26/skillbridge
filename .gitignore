@@ -60,9 +60,9 @@ Thumbs.db
 *.lnk
 
 # Large model and data files
-*.pt
+# *.pt
 *.pth
-*.pkl
+# *.pkl
 *.joblib
 *.h5
 *.model
