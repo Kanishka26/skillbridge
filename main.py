@@ -114,6 +114,14 @@ with torch.no_grad():
 print(f"Model loaded. Architecture: {checkpoint.get('architecture', 'unknown')}")
 print(f"Saved test performance: {checkpoint.get('test_results', {})}")
 
+# ── Load G for relational path explanations ───────────────────────
+print("Loading graph G for explanation paths...")
+import pickle as _pickle
+with open('outputs/graph_G.pkl', 'rb') as f:
+    G = _pickle.load(f)
+from explanation_paths import find_explanation_path, format_path_as_string
+print("Graph G loaded.")
+
 # ── Match helpers (unchanged logic, now over label maps built fresh) ────
 def match_skill(skill_name: str, threshold: int = 70):
     result = process.extractOne(skill_name.lower(), list(skill_label_to_idx.keys()))
@@ -141,6 +149,7 @@ class MissingSkill(BaseModel):
     confidence:        float
     reason:            str
     learning_priority: str
+    explanation_path:  str | None = None
 
 class PredictResponse(BaseModel):
     success:           bool
@@ -176,6 +185,7 @@ def predict(request: PredictRequest):
     occ_local_idx = match_occupation(request.target_occupation)
     if occ_local_idx is None:
         return {"success": False, "error": f"Occupation '{request.target_occupation}' not found"}
+    target_occ_uri = all_occ_nodes[occ_local_idx]
 
     # global index: occupations offset by num_skills, matching training convention
     occ_global_idx = occ_local_idx + occ_offset
@@ -209,12 +219,19 @@ def predict(request: PredictRequest):
         # (min/max over a validation batch) before trusting these confidence
         # values in the demo.
         conf = float(torch.sigmoid(torch.tensor(score)).item())
+
+        # relational path explanation: why is this skill connected to the
+        # target occupation? None if no path found within max_hops.
+        hops = find_explanation_path(G, uri, target_occ_uri)
+        path_str = format_path_as_string(hops) if hops else None
+
         missing_skills.append(MissingSkill(
             skill=label,
             category=cat,
             confidence=round(conf, 3),
             reason="Coming soon",
-            learning_priority="TBD"
+            learning_priority="TBD",
+            explanation_path=path_str
         ))
 
     readiness = round(len(matched_skills) / max(len(matched_skills) + len(top_missing), 1), 2)
@@ -233,5 +250,4 @@ def health():
     return {"status": "ok", "model": "R-GCN (basis=2, DistMult-scoring, multi-neg trained)"}
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
