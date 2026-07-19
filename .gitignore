@@ -1,0 +1,106 @@
+# Virtual Environment
+skillbridge-env/
+venv/
+ENV/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Environments
+.env
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+*.lnk
+
+# Large model and data files
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.h5
+*.model
+
+# IDE specific Python files
+.pylintrc
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Coverage
+.coverage
+htmlcov/
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Spyder IDE
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Mac OS
+.AppleDouble
+.LSOverride
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+*.log

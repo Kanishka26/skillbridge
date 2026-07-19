@@ -1,0 +1,11 @@
+,Value
+Total nodes,1090.0
+Skill nodes,979.0
+Occupation nodes,111.0
+required_for edges (skill->occupation),8014.0
+optional_for edges (skill->occupation),3093.0
+broader edges (skill->skill),276.0
+narrower edges (skill->skill),48.0
+Total edges (4 relation types),11431.0
+Skill-occupation bipartite density,0.102209
+Skill-skill hierarchy density,0.00033839
