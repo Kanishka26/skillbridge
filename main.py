@@ -118,6 +118,21 @@ with torch.no_grad():
 print(f"Model loaded. Architecture: {checkpoint.get('architecture', 'unknown')}")
 print(f"Saved test performance: {checkpoint.get('test_results', {})}")
 
+# ── Load G for relational path explanations (non-fatal if missing) ──
+G = None
+find_explanation_path = None
+format_path_as_string = None
+try:
+    print("Loading graph G for explanation paths...")
+    import pickle as _pickle
+    with open('outputs/graph_G.pkl', 'rb') as f:
+        G = _pickle.load(f)
+    from explanation_paths import find_explanation_path, format_path_as_string
+    print("Graph G loaded. Explanation paths enabled.")
+except Exception as e:
+    print(f"WARNING: could not load explanation path support ({e}). "
+          f"Predictions will still work, but explanation_path will be null.")
+
 # ── Match helpers (unchanged logic, now over label maps built fresh) ────
 def match_skill(skill_name: str, threshold: int = 70):
     result = process.extractOne(skill_name.lower(), list(skill_label_to_idx.keys()))
@@ -145,6 +160,9 @@ class MissingSkill(BaseModel):
     confidence:        float
     reason:            str
     learning_priority: str
+    explanation_path:  str | None = None
+    explanation_hops:  int | None = None   # number of hops in the path; UI can
+                                             # truncate/collapse display if > 2
 
 class PredictResponse(BaseModel):
     success:           bool
@@ -180,6 +198,7 @@ def predict(request: PredictRequest):
     occ_local_idx = match_occupation(request.target_occupation)
     if occ_local_idx is None:
         return {"success": False, "error": f"Occupation '{request.target_occupation}' not found"}
+    target_occ_uri = all_occ_nodes[occ_local_idx]
 
     # global index: occupations offset by num_skills, matching training convention
     occ_global_idx = occ_local_idx + occ_offset
@@ -214,12 +233,30 @@ def predict(request: PredictRequest):
         # values in the demo.
         conf = float(torch.sigmoid(torch.tensor(score)).item())
 
+        # relational path explanation -- best-effort only. If G wasn't
+        # loaded (see startup warning) or pathfinding fails for this
+        # specific pair, explanation_path is just null; the prediction
+        # itself is unaffected.
+        path_str = None
+        hop_count = None
+        if G is not None and find_explanation_path is not None:
+            try:
+                hops = find_explanation_path(G, uri, target_occ_uri)
+                if hops:
+                    path_str = format_path_as_string(hops)
+                    hop_count = len(hops)
+            except Exception:
+                path_str = None
+                hop_count = None
+
         missing_skills.append(MissingSkill(
             skill=label,
             category=cat,
             confidence=round(conf, 3),
             reason="Coming soon",
-            learning_priority="TBD"
+            learning_priority="TBD",
+            explanation_path=path_str,
+            explanation_hops=hop_count
         ))
 
     readiness = round(len(matched_skills) / max(len(matched_skills) + len(top_missing), 1), 2)
